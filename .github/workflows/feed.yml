@@ -1,0 +1,39 @@
+name: Feed Trovaprezzi
+
+on:
+  schedule:
+    - cron: "23 */4 * * *"   # ogni 4 ore (UTC)
+  workflow_dispatch:          # avvio manuale dal tab Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  feed:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Genera feed
+        env:
+          SHOPIFY_STORE: ${{ secrets.SHOPIFY_STORE }}
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+        run: |
+          mkdir -p public
+          python feed_trovaprezzi.py public/trovaprezzi.csv
+      # Se lo script fallisce, questi passi non girano e resta online l'ultimo feed valido.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - uses: actions/deploy-pages@v4
