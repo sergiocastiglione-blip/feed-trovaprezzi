@@ -36,7 +36,7 @@ query($cursor: String) {
       collections(first: 50) { nodes { title } }
       variants(first: 100) {
         nodes {
-          id title sku barcode price compareAtPrice inventoryQuantity
+          id title sku barcode price compareAtPrice inventoryQuantity availableForSale
           inventoryItem { tracked }
           image { url }
         }
@@ -118,10 +118,13 @@ def righe(prodotti):
             link = f"{DOMINIO}/products/{p['handle']}"
             if multi:
                 link += "?variant=" + v["id"].rsplit("/", 1)[-1]
-            if v["inventoryItem"]["tracked"]:
-                disponibilita = str(max(0, v["inventoryQuantity"] or 0))
-            else:
+            qta = v["inventoryQuantity"] or 0
+            if v["inventoryItem"]["tracked"] and qta > 0:
+                disponibilita = str(qta)
+            elif v["availableForSale"]:  # licenze vendibili oltre le scorte (consegna entro 24 ore)
                 disponibilita = "disponibile"
+            else:
+                disponibilita = "0"
             img = (v["image"] or p["featuredImage"] or {}).get("url", "").split("?")[0]
             rif = ""
             if USA_PREZZO_RIFERIMENTO and v["compareAtPrice"] and float(v["compareAtPrice"]) > float(v["price"]):
